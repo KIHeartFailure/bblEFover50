@@ -1,0 +1,247 @@
+```{r outtab, cache=cacheon}
+survmy <- function(time, event, eventname, data, matched = FALSE,
+                   sensanalysis = FALSE, fg = FALSE) {
+  tmpdata <- data
+
+  if (sensanalysis) {
+    tmpnrow <- 1
+  } else {
+    tmpnrow <- 8
+  }
+
+  out <- data.frame(matrix(NA, ncol = 4, nrow = tmpnrow))
+
+  out[1, 1] <- eventname
+  colnames(out) <- c("Outcome", "Model", "Bbl No", "Bbl Yes")
+
+  if (!sensanalysis) {
+    ## 1, 3, 5 yr mort (from survfit)
+    fit <- survfit(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl")),
+      data = tmpdata
+    )
+
+    sfit <- summary(fit, times = c(1, 3, 5) * 365.25)
+
+    out[1:3, 2] <- paste("% (95% CI)", c(1, 3, 5), "yr")
+
+    out[1:3, 3:4] <- paste0(
+      dF(100 - sfit$surv * 100, dig = 0), " (",
+      dF(100 - sfit$lower * 100, dig = 0), "-",
+      dF(100 - sfit$upper * 100, dig = 0), ")"
+    )
+
+    ## incidence rate
+    out[4, 2] <- "Incidence (no events, sum py, rate/1000py (95% CI))"
+
+    tmpdata$eventcount <- tmpdata[, event] == "Yes"
+    tmpdata <- tmpdata %>% mutate(eventcount = ifelse(eventcount, 1, 0))
+
+
+    ev <- by(tmpdata$eventcount, tmpdata[, "shf_bbl"], sum)
+    s <- by(tmpdata[, time], tmpdata[, "shf_bbl"], sum) / 365.25
+    r <- pois.exact(x = ev, pt = s / 1000)
+
+    out[4, 3:4] <- paste0(
+      ev, ", ",
+      dF(s, dig = 0), ", ",
+      dF(r$rate, dig = 0), " (",
+      dF(r$lower, dig = 0), "-",
+      dF(r$upper, dig = 0), ")"
+    )
+
+
+    ## cox regressions
+    if (!matched) {
+      # crude
+      mod <- coxph(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl")),
+        data = tmpdata
+      )
+      smod <- summary(mod)
+      out[5, 2] <- "Crude HR (95% CI), p-value"
+      out[5, 3:4] <- c("ref", paste0(
+        dF(smod$conf.int[1, 1], dig = 2),
+        " (", dF(smod$conf.int[1, 3], dig = 2),
+        "-", dF(smod$conf.int[1, 4], dig = 2), "), ",
+        dF(smod$coef[1, 5], dig = 3, p = TRUE)
+      ))
+
+      # age and sex adj
+      mod <- coxph(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl + ns(shf_age, 4) + shf_sex")),
+        data = tmpdata
+      )
+      smod <- summary(mod)
+      out[6, 2] <- "Adj mini HR (95% CI), p-value"
+      out[6, 3:4] <- c("ref", paste0(
+        dF(smod$conf.int[1, 1], dig = 2),
+        " (", dF(smod$conf.int[1, 3], dig = 2),
+        "-", dF(smod$conf.int[1, 4], dig = 2), "), ",
+        dF(smod$coef[1, 5], dig = 3, p = TRUE)
+      ))
+
+      # partially adjusted doesn't include only variables with no missing
+
+      mod <- coxph(formula(paste0(
+        "Surv(", time, ",", event, "=='Yes') ~ shf_bbl + ",
+        paste(modvarspartialns, collapse = " + ")
+      )),
+      data = tmpdata
+      )
+      smod <- summary(mod)
+      out[7, 2] <- "Adj partial HR (95% CI), p-value"
+      out[7, 3:4] <- c("ref", paste0(
+        dF(smod$conf.int[1, 1], dig = 2),
+        " (", dF(smod$conf.int[1, 3], dig = 2),
+        "-", dF(smod$conf.int[1, 4], dig = 2), "), ",
+        dF(smod$coef[1, 5], dig = 3, p = TRUE)
+      ))
+
+      # fully adjusted
+
+      amod <- my.coxph.mids(formula(paste0(
+        "Surv(", time, ",", event, " == 'Yes') ~ shf_bbl +",
+        paste(modvarsns, collapse = " + ")
+      )),
+      data = imp
+      )
+
+      ## df the number of events minus the regression coefficients.
+      ## There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+      asmod <- summary(pool(amod,
+        dfcom =
+          (amod$analyses[[1]]$nevent - length(amod$analyses[[1]]$coefficients))
+      ))
+
+      out[8, 2] <- "Adj full HR (95% CI), p-value"
+      out[8, 3:4] <- c("ref", paste0(
+        dF(exp(asmod$estimate[1]), dig = 2),
+        " (", dF(exp(asmod$estimate[1] - z05 * asmod$std.error[1]), dig = 2),
+        "-", dF(exp(asmod$estimate[1] + z05 * asmod$std.error[1]), dig = 2), "), ",
+        dF(asmod$p.value[1], dig = 3, p = TRUE)
+      ))
+    }
+  }
+
+  if (matched) {
+    if (!fg) {
+      mod <- coxme(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl + (1|par)")),
+        data = tmpdata
+      )
+
+      se <- sqrt(vcov(mod))
+
+      # P-value
+      zp <- mod$coeff / se
+      p <- dF((1 - pnorm(abs(zp))) * 2, dig = 3, p = TRUE)
+
+      out[tmpnrow, 2] <- "Adj full HR (95% CI), p-value"
+
+      out[tmpnrow, 3:4] <- c("ref", paste0(
+        dF(exp(mod$coeff), dig = 2),
+        " (", dF(exp(mod$coef - z05 * se), dig = 2),
+        "-", dF(exp(mod$coef + z05 * se), dig = 2), "), ",
+        p
+      ))
+    }
+    if (fg) {
+      mod <- summary(z <- crr(tmpdata %>% pull(!!sym(time)),
+        tmpdata %>% pull(!!sym(event)),
+        tmpdata %>% pull(shf_bblnum),
+        failcode = 1, cencode = 0
+      ))
+
+      # P-value
+      p <- dF(mod$coef[, 5], dig = 3, p = TRUE)
+
+      out[tmpnrow, 2] <- "Adj full HR (95% CI), p-value"
+
+      out[tmpnrow, 3:4] <- c("ref", paste0(
+        dF(mod$conf.int[, 1], dig = 2),
+        " (", dF(mod$conf.int[, 3], dig = 2),
+        "-", dF(mod$conf.int[, 4], dig = 2), ") ",
+        p
+      ))
+    }
+  }
+  return(out)
+}
+
+hfhosp1 <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_hosphf",
+  eventname = "First HF hosp", data = pdata
+)
+hfhosp2 <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_hosphf",
+  eventname = "First HF hosp", data = matchp, matched = TRUE
+)
+hfhosp3 <- survmy(
+  time = "sos_outtime_hosphf_bbl", event = "sos_out_hosphf_bbl",
+  eventname = "Consistency - First HF hosp bbl crossover censored",
+  data = matchp, matched = TRUE, sensanalysis = TRUE
+)
+hfhosp4 <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_hosphf",
+  eventname = "Consistency - First HF hosp excl NT-proBNP",
+  data = matchp_sens, matched = TRUE, sensanalysis = TRUE
+)
+hfhosp5 <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_hosphf_comp",
+  eventname = "Consistency - First HF hosp death as competing risk",
+  data = matchp, matched = TRUE, sensanalysis = TRUE,
+  fg = TRUE
+)
+
+empty <- data.frame(matrix(NA, nrow = 3, ncol = 4))
+colnames(empty) <- colnames(hfhosp1)
+
+hfhospall <- cbind(rbind(hfhosp2, hfhosp3, hfhosp4, hfhosp5)[1:2], 
+                   rbind(hfhosp1, empty)[3:4], 
+                   rbind(hfhosp2, hfhosp3, hfhosp4, hfhosp5)[3:4])
+  
+cvmort1 <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CV death", data = pdata
+)
+cvmort2 <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CV death", data = matchp, matched = TRUE
+)
+cvmort3 <- survmy(
+  time = "sos_outtime_death_bbl", event = "sos_out_deathcv_bbl",
+  eventname = "Consistency - CV death bbl crossover censored",
+  data = matchp, matched = TRUE, sensanalysis = TRUE
+)
+cvmort4 <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "Consistency - CV death hosp excl NT-proBNP",
+  data = matchp_sens, matched = TRUE, sensanalysis = TRUE
+)
+cvmort5 <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv_comp",
+  eventname = "Consistency - CV death hosp death as competing risk",
+  data = matchp, matched = TRUE, sensanalysis = TRUE,
+  fg = TRUE
+)
+
+cvmortall <- cbind(rbind(cvmort2, cvmort3, cvmort4, cvmort5)[1:2],
+                   rbind(cvmort1, empty)[3:4], 
+                   rbind(cvmort2, cvmort3, cvmort4, cvmort5)[3:4])
+
+  outall <- rbind(
+    hfhospall, 
+    cvmortall
+  )
+
+
+write.xlsx(outall, paste0("./output/tabs/outtab_", Sys.Date(), ".xlsx"), rowNames = FALSE)
+
+myHeader <- c(" " = 1, " " = 1, "All" = 2, "Matched" = 2)
+names(myHeader) <- c(" ", " ", "All", "Matched")
+
+
+mykable(outall,
+  fontsize = 6,
+  caption = "Outcomes"
+) %>%
+  landscape() %>%
+  add_header_above(myHeader)
+```

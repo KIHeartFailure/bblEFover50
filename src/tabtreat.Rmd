@@ -1,0 +1,67 @@
+```{r tabtreat, cache=cacheon}
+
+tabtreat_tmp <- CreateTableOne(
+  vars = c(
+    "shf_bblsub", "shf_bbldosemax",
+    "shf_dosebbl_Bisoprolol",
+    "shf_dosebbl_Carvedilol",
+    "shf_dosebbl_Metoprolol"
+  ),
+  data = pdata %>% filter(shf_bbl == "Yes")
+)
+tabtreat <- print(tabtreat_tmp,
+  varLabels = TRUE, missing = TRUE, printToggle = FALSE,
+  nonnormal = c(
+    "shf_bbldosemax",
+    "shf_dosebbl_Bisoprolol",
+    "shf_dosebbl_Carvedilol",
+    "shf_dosebbl_Metoprolol"
+  ),
+  catDigits = 1, contDigits = 1,
+  explain = FALSE
+)
+
+
+tabtreatm_tmp <- CreateTableOne(
+  vars = c(
+    "shf_bblsub", "shf_bbldosemax",
+    "shf_dosebbl_Bisoprolol",
+    "shf_dosebbl_Carvedilol",
+    "shf_dosebbl_Metoprolol"
+  ),
+  data = matchp %>% filter(shf_bbl == "Yes")
+)
+tabtreatm <- print(tabtreatm_tmp,
+  varLabels = TRUE, missing = TRUE, printToggle = FALSE,
+  nonnormal = c(
+    "shf_bbldosemax",
+    "shf_dosebbl_Bisoprolol",
+    "shf_dosebbl_Carvedilol",
+    "shf_dosebbl_Metoprolol"
+  ),
+  catDigits = 1, contDigits = 1,
+  explain = FALSE
+)
+
+tabtreatout <- as_tibble(cbind(
+  rownames(tabtreat),
+  tabtreat[, 2],
+  tabtreat[, 1],
+  tabtreatm[, 2],
+  tabtreatm[, 1]
+))
+
+colnames(tabtreatout) <- c(
+  "Variables", rep(c("Missing (%)", "Overall"), 2)
+)
+
+write.xlsx(tabtreatout, paste0("./output/tabs/tabtreat_", Sys.Date(), ".xlsx"))
+
+myHeader <- c(" " = 1, "All" = 2, "Matched" = 2)
+names(myHeader) <- c(" ", "All", "Matched")
+
+mykable(tabtreatout,
+  caption = "Treatment characteristics"
+) %>%
+  add_header_above(myHeader)
+```

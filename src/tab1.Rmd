@@ -1,0 +1,86 @@
+```{r tab1, cache=cacheon}
+
+tab1_tmp <- CreateTableOne(
+  vars = tabvars,
+  strata = "shf_bbl",
+  data = pdata,
+  smd = TRUE
+)
+tab1 <- print(tab1_tmp,
+  varLabels = TRUE, missing = TRUE, printToggle = FALSE, nonnormal = tabvars,
+  test = TRUE,
+  catDigits = 1, contDigits = 1,
+  explain = FALSE,
+  smd = TRUE
+)
+
+tab1m_tmp <- CreateTableOne(
+  vars = tabvars,
+  strata = "shf_bbl",
+  data = matchp,
+  smd = TRUE
+)
+tab1m <- print(tab1m_tmp,
+  varLabels = TRUE, missing = TRUE, printToggle = FALSE, nonnormal = tabvars,
+  test = TRUE,
+  catDigits = 1, contDigits = 1,
+  explain = FALSE,
+  smd = TRUE
+)
+
+tab1out <- as_tibble(cbind(rownames(tab1), tab1[, 6], tab1[, c(1:2, 5, 3)], tab1m[, 6], tab1m[, c(1:2, 5, 3)]))
+
+tab1out <- tab1out %>%
+  mutate(
+    tmp_varsforfoot = V1,
+    V1 = sub("  ", ". ", V1),
+    V1 = sanitizeTextFunc(V1)
+  )
+
+
+## add footnote about ras (arb, aceir, arni)
+
+tab1out$V1 <- ifelse(stri_extract_first_words(tab1out$tmp_varsforfoot) == "shf_rasarni",
+  paste0(tab1out$V1, footnote_marker_symbol(1)), tab1out$V1
+)
+
+## add fotnote stating which variables are used in multiple imputation
+
+tab1out$V1 <- ifelse(stri_extract_first_words(tab1out$tmp_varsforfoot) %in% modvars,
+  paste0(tab1out$V1, footnote_marker_symbol(2)), tab1out$V1
+)
+
+tab1out <- tab1out %>% select(-tmp_varsforfoot)
+
+## white space removed in kable function.
+## fix in order to use escape = TRUE
+
+colnames(tab1out) <- sanitizeTextFunc(c(
+  "Variables", rep(c("Missing (%)", "Bbl No", "Bbl Yes", "SMD", "p-value"), 2)
+))
+
+write.xlsx(tab1out, paste0("./output/tabs/tab1_", Sys.Date(), ".xlsx"), rowNames = FALSE)
+
+
+myHeader <- c(" " = 1, "All" = 5, "Matched" = 5)
+names(myHeader) <- c(" ", "All", "Matched")
+
+
+footnote(
+  mykable(tab1out,
+    fontsize = 6,
+    caption = "Baseline characteristics",
+    longtable = TRUE,
+    escape = FALSE
+  ) %>%
+    landscape() %>%
+    add_header_above(myHeader),
+  general = c(
+    "Categorical variables are presented with n (%) and tested with chi-square test and continuous variables with median [q1-q3] and tested with Mann-Whitney U test."
+  ),
+  symbol = c(
+    "arb/acei/arni",
+    "Included in the multiple imputation model (althought not necessarily imputed if there is no missing data) and fully adjusted models."
+  )
+)
+```
