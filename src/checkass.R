@@ -1,17 +1,28 @@
 
 ProjectTemplate::reload.project()
 
+dataass <- mice::complete(imp, 6)
+
 
 # Cox regression ----------------------------------------------------------
 
 
-mod <- coxph(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl")),
-             data = tmpdata
+modm_hf <- coxph(Surv(sos_outtime_hosphf, sos_out_hosphf == "Yes") ~ shf_bbl, data = matchp)
+modm_cv <- coxph(Surv(sos_outtime_death, sos_out_deathcv == "Yes") ~ shf_bbl, data = matchp)
+
+mod_hf <- coxph(formula(paste0(
+  "Surv(sos_outtime_hosphf, sos_out_hosphf == 'Yes') ~ shf_bbl +",
+  paste(modvarsns, collapse = " + ")
+)),
+data = dataass
 )
 
-mod_hf <- coxph(Surv(sos_outtime_hosphf, sos_out_hosphf == 'Yes') ~ shf_bbl, data = matchp)
-mod_cv <- coxph(Surv(sos_outtime_death, sos_out_deathcv == 'Yes') ~ shf_bbl, data = matchp)
-
+mod_cv <- coxph(formula(paste0(
+  "Surv(sos_outtime_death, sos_out_deathcv == 'Yes') ~ shf_bbl +",
+  paste(modvarsns, collapse = " + ")
+)),
+data = dataass
+)
 
 # Checking for non-prop hazards -------------------------------------------
 
@@ -28,6 +39,6 @@ ggcoxdiagnostics(mod_hf,
   linear.predictions = FALSE, ggtheme = theme_bw()
 )
 ggcoxdiagnostics(mod_cv,
-                 type = "dfbeta",
-                 linear.predictions = FALSE, ggtheme = theme_bw()
+  type = "dfbeta",
+  linear.predictions = FALSE, ggtheme = theme_bw()
 )

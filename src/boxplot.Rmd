@@ -1,18 +1,21 @@
 ```{r boxplot, fig.cap="Boxplot NT-proBNP"}
 
-p <- ggplot(pdata %>% filter(!is.na(shf_logntpropbnp)), aes(x = shf_bbl, y = shf_logntpropbnp)) + 
-  geom_boxplot()
+p <- ggplot(
+  pdata %>% filter(!is.na(shf_logntpropbnp)),
+  aes(x = shf_bbl, y = shf_logntpropbnp)
+) +
+  geom_boxplot(fill = kicols[1])
 
 labs <- c(5, 10, 100, 1000, 10000, 150000)
 
-p + coord_flip() + 
-        theme_minimal() +
-        scale_y_continuous(breaks = log(labs), labels = labs) +
-  xlab("Bbl") +
-  ylab("NT-proBNP (log scale)") +          
+p + coord_flip() +
+  theme_minimal() +
+  scale_y_continuous(breaks = log(labs), labels = labs, minor_breaks = log(labs)) +
+  xlab("Beta-blocker") +
+  ylab("NT-proBNP (log scale)") +
   theme(
     # legend.position = "none",
-    #panel.grid.major = element_blank()
+    # panel.grid.major = element_blank()
     panel.grid.minor = element_blank()
   )
 ```

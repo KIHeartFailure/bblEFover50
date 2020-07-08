@@ -11,7 +11,7 @@ load_libraries: TRUE
 libraries: ggplot2, purrr, dplyr, tidyr, tibble, stringr, stringi, 
             lubridate, kableExtra, tableone, openxlsx,
             survival, survminer, mice, epitools, rmeta, 
-            parallel, doParallel, foreach, Matching, coxme, 
+            parallel, doParallel, foreach, Matching, 
             splines, cmprsk, haven, Greg
 as_factors: FALSE
 tables_type: tibble

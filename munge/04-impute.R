@@ -5,7 +5,9 @@
 noimpvars <- names(pdata)[!names(pdata) %in% modvars]
 
 # Nelson-Aalen estimator
-na <- basehaz(coxph(Surv(sos_outtime_hosphf, sos_out_hosphf == "Yes") ~ 1, data = pdata, method = "breslow"))
+na <- basehaz(coxph(Surv(sos_outtime_hosphf, sos_out_hosphf == "Yes") ~ 1,
+  data = pdata, method = "breslow"
+))
 pdata <- left_join(pdata, na, by = c("sos_outtime_hosphf" = "time"))
 
 ini <- mice(pdata, maxit = 0, print = F)
@@ -76,9 +78,9 @@ imp_sens <-
     .packages = "mice"
   ) %dopar% {
     mice(pdata,
-         m = m_2_use, maxit = 10, method = meth,
-         predictorMatrix = pred,
-         printFlag = FALSE
+      m = m_2_use, maxit = 10, method = meth,
+      predictorMatrix = pred,
+      printFlag = FALSE
     )
   }
 stopImplicitCluster()

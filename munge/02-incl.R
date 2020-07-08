@@ -9,16 +9,14 @@ flow <- c("Number of posts (cases) in SHFDB3", nrow(pdata))
 
 pdata <- pdata %>%
   filter(shf_ef == ">=50")
-flow <- rbind(flow, c("EF >= 50% (incl no missing)", nrow(pdata)))
+flow <- rbind(flow, c("EF >= 50% (incl no missing EF)", nrow(pdata)))
 
 pdata <- pdata %>%
   filter(!is.na(shf_bbl))
 flow <- rbind(flow, c("No missing bbl", nrow(pdata)))
 
 pdata <- pdata %>%
-  #filter(shf_indexdtm >= ymd("2005-07-01"))
   filter(shf_indexdtm >= ymd("2011-01-01"))
-#flow <- rbind(flow, c("Indexdate >= 1 July 2005, start of DDR (needed for bbl cross-overs)", nrow(pdata)))
 flow <- rbind(flow, c("Indexdate >= 1 Jan 2011, start of loop diuretics", nrow(pdata)))
 
 pdata <- pdata %>%
@@ -29,9 +27,10 @@ pdata <- pdata %>%
 
 flow <- rbind(flow, c("First registration / patient", nrow(pdata)))
 
-flow <- rbind(flow, c("No of patients with continuous EF (for subgroup analysis)", nrow(pdata %>% filter(!is.na(shf_efproc)))))
+flow <- rbind(flow, c(
+  "whereof patients with continuous EF",
+  nrow(pdata %>%
+    filter(!is.na(shf_efproc)))
+))
 
 colnames(flow) <- c("Criteria", "N")
-  
-  
-

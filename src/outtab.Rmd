@@ -1,12 +1,17 @@
 ```{r outtab, cache=cacheon}
 survmy <- function(time, event, eventname, data, matched = FALSE,
-                   sensanalysis = FALSE, fg = FALSE) {
+                   sensanalysis = FALSE, fg = FALSE,
+                   fullyadj = TRUE) {
   tmpdata <- data
 
   if (sensanalysis) {
     tmpnrow <- 1
   } else {
-    tmpnrow <- 8
+    if (fullyadj) {
+      tmpnrow <- 8
+    } else {
+      tmpnrow <- 4
+    }
   }
 
   out <- data.frame(matrix(NA, ncol = 4, nrow = tmpnrow))
@@ -15,23 +20,25 @@ survmy <- function(time, event, eventname, data, matched = FALSE,
   colnames(out) <- c("Outcome", "Model", "Bbl No", "Bbl Yes")
 
   if (!sensanalysis) {
-    ## 1, 3, 5 yr mort (from survfit)
-    fit <- survfit(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl")),
-      data = tmpdata
-    )
+    if (fullyadj) {
+      ## 1, 3, 5 yr mort (from survfit)
+      fit <- survfit(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl")),
+        data = tmpdata
+      )
 
-    sfit <- summary(fit, times = c(1, 3, 5) * 365.25)
+      sfit <- summary(fit, times = c(1, 3, 5) * 365.25)
 
-    out[1:3, 2] <- paste("% (95% CI)", c(1, 3, 5), "yr")
+      out[1:3, 2] <- paste("% (95% CI)", c(1, 3, 5), "yr")
 
-    out[1:3, 3:4] <- paste0(
-      dF(100 - sfit$surv * 100, dig = 0), " (",
-      dF(100 - sfit$lower * 100, dig = 0), "-",
-      dF(100 - sfit$upper * 100, dig = 0), ")"
-    )
+      out[1:3, 3:4] <- paste0(
+        dF(100 - sfit$surv * 100, dig = 0), " (",
+        dF(100 - sfit$upper * 100, dig = 0), "-",
+        dF(100 - sfit$lower * 100, dig = 0), ")"
+      )
+    }
 
     ## incidence rate
-    out[4, 2] <- "Incidence (no events, sum py, rate/1000py (95% CI))"
+    out[ifelse(fullyadj, 4, 1), 2] <- "Incidence (no events, sum py, rate/1000py (95% CI))"
 
     tmpdata$eventcount <- tmpdata[, event] == "Yes"
     tmpdata <- tmpdata %>% mutate(eventcount = ifelse(eventcount, 1, 0))
@@ -41,7 +48,7 @@ survmy <- function(time, event, eventname, data, matched = FALSE,
     s <- by(tmpdata[, time], tmpdata[, "shf_bbl"], sum) / 365.25
     r <- pois.exact(x = ev, pt = s / 1000)
 
-    out[4, 3:4] <- paste0(
+    out[ifelse(fullyadj, 4, 1), 3:4] <- paste0(
       ev, ", ",
       dF(s, dig = 0), ", ",
       dF(r$rate, dig = 0), " (",
@@ -57,8 +64,8 @@ survmy <- function(time, event, eventname, data, matched = FALSE,
         data = tmpdata
       )
       smod <- summary(mod)
-      out[5, 2] <- "Crude HR (95% CI), p-value"
-      out[5, 3:4] <- c("ref", paste0(
+      out[ifelse(fullyadj, 5, 2), 2] <- "Crude HR (95% CI), p-value"
+      out[ifelse(fullyadj, 5, 2), 3:4] <- c("ref", paste0(
         dF(smod$conf.int[1, 1], dig = 2),
         " (", dF(smod$conf.int[1, 3], dig = 2),
         "-", dF(smod$conf.int[1, 4], dig = 2), "), ",
@@ -66,12 +73,12 @@ survmy <- function(time, event, eventname, data, matched = FALSE,
       ))
 
       # age and sex adj
-      mod <- coxph(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl + ns(shf_age, 4) + shf_sex")),
+      mod <- coxph(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl + ns(shf_age, 3) + shf_sex")),
         data = tmpdata
       )
       smod <- summary(mod)
-      out[6, 2] <- "Adj mini HR (95% CI), p-value"
-      out[6, 3:4] <- c("ref", paste0(
+      out[ifelse(fullyadj, 6, 3), 2] <- "Adj mini HR (95% CI), p-value"
+      out[ifelse(fullyadj, 6, 3), 3:4] <- c("ref", paste0(
         dF(smod$conf.int[1, 1], dig = 2),
         " (", dF(smod$conf.int[1, 3], dig = 2),
         "-", dF(smod$conf.int[1, 4], dig = 2), "), ",
@@ -87,59 +94,57 @@ survmy <- function(time, event, eventname, data, matched = FALSE,
       data = tmpdata
       )
       smod <- summary(mod)
-      out[7, 2] <- "Adj partial HR (95% CI), p-value"
-      out[7, 3:4] <- c("ref", paste0(
+      out[ifelse(fullyadj, 7, 4), 2] <- "Adj partial HR (95% CI), p-value"
+      out[ifelse(fullyadj, 7, 4), 3:4] <- c("ref", paste0(
         dF(smod$conf.int[1, 1], dig = 2),
         " (", dF(smod$conf.int[1, 3], dig = 2),
         "-", dF(smod$conf.int[1, 4], dig = 2), "), ",
         dF(smod$coef[1, 5], dig = 3, p = TRUE)
       ))
 
-      # fully adjusted
+      if (fullyadj) {
+        # fully adjusted
 
-      amod <- my.coxph.mids(formula(paste0(
-        "Surv(", time, ",", event, " == 'Yes') ~ shf_bbl +",
-        paste(modvarsns, collapse = " + ")
-      )),
-      data = imp
-      )
+        amod <- my.coxph.mids(formula(paste0(
+          "Surv(", time, ",", event, " == 'Yes') ~ shf_bbl +",
+          paste(modvarsnsstrata, collapse = " + ")
+        )),
+        data = imp
+        )
 
-      ## df the number of events minus the regression coefficients.
-      ## There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
-      asmod <- summary(pool(amod,
-        dfcom =
-          (amod$analyses[[1]]$nevent - length(amod$analyses[[1]]$coefficients))
-      ))
+        ## df the number of events minus the regression coefficients.
+        ## There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+        asmod <- summary(pool(amod,
+          dfcom =
+            (amod$analyses[[1]]$nevent - length(amod$analyses[[1]]$coefficients))
+        ))
 
-      out[8, 2] <- "Adj full HR (95% CI), p-value"
-      out[8, 3:4] <- c("ref", paste0(
-        dF(exp(asmod$estimate[1]), dig = 2),
-        " (", dF(exp(asmod$estimate[1] - z05 * asmod$std.error[1]), dig = 2),
-        "-", dF(exp(asmod$estimate[1] + z05 * asmod$std.error[1]), dig = 2), "), ",
-        dF(asmod$p.value[1], dig = 3, p = TRUE)
-      ))
+        out[8, 2] <- "Adj full HR (95% CI), p-value"
+        out[8, 3:4] <- c("ref", paste0(
+          dF(exp(asmod$estimate[1]), dig = 2),
+          " (", dF(exp(asmod$estimate[1] - z05 * asmod$std.error[1]), dig = 2),
+          "-", dF(exp(asmod$estimate[1] + z05 * asmod$std.error[1]), dig = 2), "), ",
+          dF(asmod$p.value[1], dig = 3, p = TRUE)
+        ))
+      }
     }
   }
 
   if (matched) {
     if (!fg) {
-      mod <- coxme(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl + (1|par)")),
+      mod <- coxph(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl + frailty(par)")),
         data = tmpdata
       )
 
-      se <- sqrt(vcov(mod))
-
-      # P-value
-      zp <- mod$coeff / se
-      p <- dF((1 - pnorm(abs(zp))) * 2, dig = 3, p = TRUE)
+      smod <- summary(mod)
 
       out[tmpnrow, 2] <- "Adj full HR (95% CI), p-value"
 
       out[tmpnrow, 3:4] <- c("ref", paste0(
-        dF(exp(mod$coeff), dig = 2),
-        " (", dF(exp(mod$coef - z05 * se), dig = 2),
-        "-", dF(exp(mod$coef + z05 * se), dig = 2), "), ",
-        p
+        dF(smod$conf.int[1, 1], dig = 2),
+        " (", dF(smod$conf.int[1, 3], dig = 2),
+        "-", dF(smod$conf.int[1, 4], dig = 2), "), ",
+        dF(smod$coef[1, 6], dig = 3, p = TRUE)
       ))
     }
     if (fg) {
@@ -189,14 +194,41 @@ hfhosp5 <- survmy(
   data = matchp, matched = TRUE, sensanalysis = TRUE,
   fg = TRUE
 )
+hfhosp6 <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_hosphf",
+  eventname = "First HF hosp EF>=50% (after approx April 2017)",
+  data = pdata %>% filter(shf_efproc >= 50),
+  fullyadj = FALSE
+)
+hfhosp7 <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_hosphf",
+  eventname = "First HF hosp EF>=55% (after approx April 2017)",
+  data = pdata %>% filter(shf_efproc >= 55),
+  fullyadj = FALSE
+)
+hfhosp8 <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_hosphf",
+  eventname = "First HF hosp EF>=60% (after approx April 2017)",
+  data = pdata %>% filter(shf_efproc >= 60),
+  fullyadj = FALSE
+)
 
-empty <- data.frame(matrix(NA, nrow = 3, ncol = 4))
-colnames(empty) <- colnames(hfhosp1)
+empty_func <- function(nrowmy = 3) {
+  empty <- data.frame(matrix(NA, nrow = nrowmy, ncol = 4))
+  colnames(empty) <- colnames(hfhosp1)
+  return(empty)
+}
 
-hfhospall <- cbind(rbind(hfhosp2, hfhosp3, hfhosp4, hfhosp5)[1:2], 
-                   rbind(hfhosp1, empty)[3:4], 
-                   rbind(hfhosp2, hfhosp3, hfhosp4, hfhosp5)[3:4])
-  
+all <- rbind(hfhosp1, empty_func(), hfhosp6, hfhosp7, hfhosp8)
+match <- rbind(hfhosp2, hfhosp3, hfhosp4, hfhosp5, empty_func(4 * 3))
+
+hfhospall <- cbind(
+  Outcome = coalesce(all[, 1], match[, 1]),
+  Model = coalesce(all[, 2], match[, 2]),
+  all[3:4],
+  match[3:4]
+)
+
 cvmort1 <- survmy(
   time = "sos_outtime_death", event = "sos_out_deathcv",
   eventname = "CV death", data = pdata
@@ -221,15 +253,40 @@ cvmort5 <- survmy(
   data = matchp, matched = TRUE, sensanalysis = TRUE,
   fg = TRUE
 )
+cvmort6 <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CV death EF>=50% (after approx April 2017)",
+  data = pdata %>% filter(shf_efproc >= 50),
+  fullyadj = FALSE
+)
+cvmort7 <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CV death EF>=55% (after approx April 2017)",
+  data = pdata %>% filter(shf_efproc >= 55),
+  fullyadj = FALSE
+)
+cvmort8 <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CV death EF>=60% (after approx April 2017)",
+  data = pdata %>% filter(shf_efproc >= 60),
+  fullyadj = FALSE
+)
 
-cvmortall <- cbind(rbind(cvmort2, cvmort3, cvmort4, cvmort5)[1:2],
-                   rbind(cvmort1, empty)[3:4], 
-                   rbind(cvmort2, cvmort3, cvmort4, cvmort5)[3:4])
 
-  outall <- rbind(
-    hfhospall, 
-    cvmortall
-  )
+all <- rbind(cvmort1, empty_func(), cvmort6, cvmort7, cvmort8)
+match <- rbind(cvmort2, cvmort3, cvmort4, cvmort5, empty_func(4 * 3))
+
+cvmortall <- cbind(
+  Outcome = coalesce(all[, 1], match[, 1]),
+  Model = coalesce(all[, 2], match[, 2]),
+  all[3:4],
+  match[3:4]
+)
+
+outall <- rbind(
+  hfhospall,
+  cvmortall
+)
 
 
 write.xlsx(outall, paste0("./output/tabs/outtab_", Sys.Date(), ".xlsx"), rowNames = FALSE)

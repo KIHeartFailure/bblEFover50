@@ -76,7 +76,8 @@ footnote(
     landscape() %>%
     add_header_above(myHeader),
   general = c(
-    "Categorical variables are presented with n (%) and tested with chi-square test and continuous variables with median [q1-q3] and tested with Mann-Whitney U test."
+    "Categorical variables are presented with n (%) and tested with chi-square test and continuous variables with median [q1-q3] and tested with Mann-Whitney U test.",
+    "SMD = Standardized mean difference."
   ),
   symbol = c(
     "arb/acei/arni",
