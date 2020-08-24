@@ -39,6 +39,22 @@ pdata <- pdata %>%
     # log
     shf_logntpropbnp = log(shf_ntpropbnp),
 
+    # for subgroup analysis
+    shf_age_cat = case_when(
+      shf_age < 75 ~ "<75",
+      shf_age >= 75 ~ ">=75"
+    ),
+
+    shf_heartrate_cat = case_when(
+      shf_heartrate < 72 ~ "<72",
+      shf_heartrate >= 72 ~ ">=72"
+    ),
+
+    shf_bpsys_cat = case_when(
+      shf_bpsys < 130 ~ "<130",
+      shf_bpsys >= 130 ~ ">=130"
+    ),
+
     # numeric bbl
     shf_bblnum = as.numeric(shf_bbl) - 1,
 
@@ -50,6 +66,11 @@ pdata <- pdata %>%
     ),
     sos_out_deathcv_comp = case_when(
       sos_out_deathcv == "Yes" ~ 1,
+      sos_out_death == "Yes" ~ 2,
+      TRUE ~ 0
+    ),
+    sos_out_hospany_comp = case_when(
+      sos_out_hospany == "Yes" ~ 1,
       sos_out_death == "Yes" ~ 2,
       TRUE ~ 0
     )

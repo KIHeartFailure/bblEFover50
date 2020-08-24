@@ -54,7 +54,7 @@ tabvars <- c(
 
 # vars fox log reg and cox reg
 tabvars_not_in_mod <- c(
-  "shf_bpsys",
+  "shf_map",
   "shf_bpdia",
   "shf_ef",
   "shf_efproc",
@@ -64,7 +64,7 @@ tabvars_not_in_mod <- c(
 modvars <- tabvars[!(tabvars %in% tabvars_not_in_mod)]
 
 kontvars <- c(
-  "shf_age", "shf_map", "shf_heartrate", "shf_hb",
+  "shf_age", "shf_bpsys", "shf_heartrate", "shf_hb",
   "shf_potassium", "shf_gfrckdepi", "shf_ntpropbnp"
 )
 

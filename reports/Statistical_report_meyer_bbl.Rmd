@@ -49,7 +49,7 @@ cacheon <- TRUE
 
 ## Data source
 
-SHFDB3, https://kiheartfailure.github.io/shfdb3/, v 3.1.2. 
+SHFDB3, https://kiheartfailure.github.io/shfdb3/, v 3.1.4. 
 
 ## Inclusion/exclusion criteria
 
@@ -110,6 +110,8 @@ The following outcomes are considered:
 
 - First HF hospitalization (primary)
 - Cardiovascular death (CVD)
+- First all-cause hospitalization
+- All-cause mortality
 
 The main analysis is the ps matched analysis including NT-proBNP with bbl 
 according to the ITT principle. All analyses are on this population unless 
@@ -173,6 +175,11 @@ is highly selected with a shorter follow-up and therefore also an
 analysis on EF >= 50% with continuous EF was performed N = 
 `r paste(pdata %>% filter(shf_efproc >= 50) %>% count(shf_bbl) %>% pull(n), collapse = "/")`.
 
+#### Other subgroups
+
+Subgroups for selected other variables was depicted in a Forest plot for the matched 
+cohort using interaction effects. 
+
 ### Assumptions
 
 The proportional hazards assumption was investigated using the scaled Schoenfeld 
@@ -188,6 +195,13 @@ were deemed not to have proportional hazards and therefore stratified for in the
 ```{r, child = "../src/outtab.Rmd"}
 
 ```
+
+```{r, child = "../src/outtabsub.Rmd"}
+
+```
+
+\clearpage
+\newpage
 
 ## NT-proBNP
 
@@ -213,8 +227,8 @@ sessionInfo()
 ## R code
 
 The R code for all data handling and statistical analyses are found: 
-https://github.com/KIHeartFailure/bblEFover50. On publication, 
-since this report is placed there, the repository will be made public so as to 
+https://github.com/KIHeartFailure/bblEFover50. On publication the repository 
+will be made public so it is possible to 
 link to it from the resulting article for increased transparency and code sharing.
 No data or output is stored in the repository. 
 

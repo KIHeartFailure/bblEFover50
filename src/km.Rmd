@@ -31,7 +31,7 @@ axis(1, at = seq(0, 7, 1) * 365, seq(0, 7, 1))
 m11 <- 1 - summary(fit, 6 * 365)$surv
 text(6 * 365, m11 + c(+.06, -.04), c("No bbl", "Bbl"), pos = 4)
 
-text(1 * 365, 0.75, paste0("Log-rank p = ", p), pos = 4)
+text(5 * 365, 0.25, paste0("Log-rank p = ", p), pos = 4)
 
 mtext("No. at risk", side = 1, line = 3, at = -310, adj = 0, cex = 1)
 
@@ -77,7 +77,99 @@ axis(1, at = seq(0, 7, 1) * 365, seq(0, 7, 1))
 m11 <- 1 - summary(fit, 6 * 365)$surv
 text(6 * 365, m11 + c(+.06, -.04), c("No bbl", "Bbl"), pos = 4)
 
-text(1 * 365, 0.75, paste0("Log-rank p = ", p), pos = 4)
+text(5 * 365, 0.25, paste0("Log-rank p = ", p), pos = 4)
+
+mtext("No. at risk", side = 1, line = 3, at = -310, adj = 0, cex = 1)
+
+mtext("No", side = 1, line = 4, at = -290, adj = 0, cex = 1)
+mtext("Yes", side = 1, line = 5, at = -290, adj = 0, cex = 1)
+
+nrisk <- summary(fit, seq(0, 7, 1) * 365.25)$n.risk
+
+axis(1, at = seq(0, 7, 1) * 365, labels = nrisk[1:8], line = 3, tick = FALSE, cex.axis = 1)
+axis(1, at = seq(0, 7, 1) * 365, labels = nrisk[9:16], line = 4, tick = FALSE, cex.axis = 1)
+```
+
+```{r kmah, fig.cap="1-KM 1 all-cause hospitalization"}
+fit <- survfit(Surv(sos_outtime_hospany, sos_out_hospany == "Yes") ~ shf_bbl, data = matchp)
+
+# logrank
+sd <- survdiff(Surv(sos_outtime_hospany, sos_out_hospany == "Yes") ~ shf_bbl, data = matchp)
+p <- dF(pchisq(sd$chisq, length(sd$n) - 1, lower.tail = FALSE), dig = 3, p = TRUE)
+
+# c(bottom, left, top, right)
+par(mar = c(6, 6, 1, 1) + 0.1)
+plot(fit,
+  fun = "event",
+  ylab = "First hospitalization (%)",
+  xscale = 30.5,
+  yscale = 100,
+  col = kicols,
+  mark.time = FALSE,
+  bty = "n",
+  # xmax = 365.25,
+  xlim = c(0, 7 * 365),
+  ylim = c(0, 1),
+  xlab = "Years",
+  axes = F,
+  lwd = 3,
+  lty = c(1, 2, 3),
+  xaxs = "i", yaxs = "i"
+)
+
+axis(2, seq(0, 1, 0.25), seq(0, 100, 25), las = 2)
+axis(1, at = seq(0, 7, 1) * 365, seq(0, 7, 1))
+
+m11 <- 1 - summary(fit, 6 * 365)$surv
+text(6 * 365, m11 + c(+.06, -.04), c("No bbl", "Bbl"), pos = 4)
+
+text(5 * 365, 0.25, paste0("Log-rank p = ", p), pos = 4)
+
+mtext("No. at risk", side = 1, line = 3, at = -310, adj = 0, cex = 1)
+
+mtext("No", side = 1, line = 4, at = -290, adj = 0, cex = 1)
+mtext("Yes", side = 1, line = 5, at = -290, adj = 0, cex = 1)
+
+nrisk <- summary(fit, seq(0, 7, 1) * 365.25)$n.risk
+
+axis(1, at = seq(0, 7, 1) * 365, labels = nrisk[1:8], line = 3, tick = FALSE, cex.axis = 1)
+axis(1, at = seq(0, 7, 1) * 365, labels = nrisk[9:16], line = 4, tick = FALSE, cex.axis = 1)
+```
+
+```{r kmd, fig.cap="1-KM Death"}
+fit <- survfit(Surv(sos_outtime_death, sos_out_death == "Yes") ~ shf_bbl, data = matchp)
+
+# logrank
+sd <- survdiff(Surv(sos_outtime_death, sos_out_death == "Yes") ~ shf_bbl, data = matchp)
+p <- dF(pchisq(sd$chisq, length(sd$n) - 1, lower.tail = FALSE), dig = 3, p = TRUE)
+
+# c(bottom, left, top, right)
+par(mar = c(6, 6, 1, 1) + 0.1)
+plot(fit,
+  fun = "event",
+  ylab = "Death (%)",
+  xscale = 30.5,
+  yscale = 100,
+  col = kicols,
+  mark.time = FALSE,
+  bty = "n",
+  # xmax = 365.25,
+  xlim = c(0, 7 * 365),
+  ylim = c(0, 1),
+  xlab = "Years",
+  axes = F,
+  lwd = 3,
+  lty = c(1, 2, 3),
+  xaxs = "i", yaxs = "i"
+)
+
+axis(2, seq(0, 1, 0.25), seq(0, 100, 25), las = 2)
+axis(1, at = seq(0, 7, 1) * 365, seq(0, 7, 1))
+
+m11 <- 1 - summary(fit, 6 * 365)$surv
+text(6 * 365, m11 + c(+.07, -.04), c("No bbl", "Bbl"), pos = 4)
+
+text(5 * 365, 0.25, paste0("Log-rank p = ", p), pos = 4)
 
 mtext("No. at risk", side = 1, line = 3, at = -310, adj = 0, cex = 1)
 

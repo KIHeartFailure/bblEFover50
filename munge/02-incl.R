@@ -2,7 +2,7 @@
 
 # Inclusion/exclusion criteria --------------------------------------------------------
 
-pdata <- rsdata312 %>%
+pdata <- rsdata314 %>%
   filter(casecontrol == "Case")
 
 flow <- c("Number of posts (cases) in SHFDB3", nrow(pdata))

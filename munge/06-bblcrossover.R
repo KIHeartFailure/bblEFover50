@@ -69,6 +69,7 @@ matchp <- matchplm2 %>%
 
     sos_outtime_hosphf_bbl = pmin(sos_outtime_hosphf, bblcenstime, na.rm = TRUE),
     sos_outtime_death_bbl = pmin(sos_outtime_death, bblcenstime, na.rm = TRUE),
+    sos_outtime_hospany_bbl = pmin(sos_outtime_hospany, bblcenstime, na.rm = TRUE),
     sos_out_hosphf_bbl = case_when(
       sos_outtime_hosphf_bbl < sos_outtime_hosphf ~ "No",
       TRUE ~ as.character(sos_out_hosphf)
@@ -76,6 +77,14 @@ matchp <- matchplm2 %>%
     sos_out_deathcv_bbl = case_when(
       sos_outtime_death_bbl < sos_outtime_death ~ "No",
       TRUE ~ as.character(sos_out_deathcv)
+    ),
+    sos_out_hospany_bbl = case_when(
+      sos_outtime_hospany_bbl < sos_outtime_hospany ~ "No",
+      TRUE ~ as.character(sos_out_hospany)
+    ),
+    sos_out_death_bbl = case_when(
+      sos_outtime_death_bbl < sos_outtime_death ~ "No",
+      TRUE ~ as.character(sos_out_death)
     )
   ) %>%
   select(-EDATUM, -diffmed, -bblcenstime, bblcensdate)

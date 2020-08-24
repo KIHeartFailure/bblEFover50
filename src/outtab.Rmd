@@ -244,12 +244,12 @@ cvmort3 <- survmy(
 )
 cvmort4 <- survmy(
   time = "sos_outtime_death", event = "sos_out_deathcv",
-  eventname = "Consistency - CV death hosp excl NT-proBNP",
+  eventname = "Consistency - CV death excl NT-proBNP",
   data = matchp_sens, matched = TRUE, sensanalysis = TRUE
 )
 cvmort5 <- survmy(
   time = "sos_outtime_death", event = "sos_out_deathcv_comp",
-  eventname = "Consistency - CV death hosp death as competing risk",
+  eventname = "Consistency - CV death death as competing risk",
   data = matchp, matched = TRUE, sensanalysis = TRUE,
   fg = TRUE
 )
@@ -283,9 +283,78 @@ cvmortall <- cbind(
   match[3:4]
 )
 
+# All-cause hospitalisation
+
+hosp1 <- survmy(
+  time = "sos_outtime_hospany", event = "sos_out_hospany",
+  eventname = "First hosp", data = pdata
+)
+hosp2 <- survmy(
+  time = "sos_outtime_hospany", event = "sos_out_hospany",
+  eventname = "First hosp", data = matchp, matched = TRUE
+)
+hosp3 <- survmy(
+  time = "sos_outtime_hospany_bbl", event = "sos_out_hospany_bbl",
+  eventname = "Consistency - First hosp bbl crossover censored",
+  data = matchp, matched = TRUE, sensanalysis = TRUE
+)
+hosp4 <- survmy(
+  time = "sos_outtime_hospany", event = "sos_out_hospany",
+  eventname = "Consistency - First hosp excl NT-proBNP",
+  data = matchp_sens, matched = TRUE, sensanalysis = TRUE
+)
+hosp5 <- survmy(
+  time = "sos_outtime_hospany", event = "sos_out_hospany_comp",
+  eventname = "Consistency - First hosp death as competing risk",
+  data = matchp, matched = TRUE, sensanalysis = TRUE,
+  fg = TRUE
+)
+
+all <- rbind(hosp1, empty_func())
+match <- rbind(hosp2, hosp3, hosp4, hosp5)
+
+hospall <- cbind(
+  Outcome = coalesce(all[, 1], match[, 1]),
+  Model = coalesce(all[, 2], match[, 2]),
+  all[3:4],
+  match[3:4]
+)
+
+# All cause mort
+mort1 <- survmy(
+  time = "sos_outtime_death", event = "sos_out_death",
+  eventname = "Death", data = pdata
+)
+mort2 <- survmy(
+  time = "sos_outtime_death", event = "sos_out_death",
+  eventname = "Death", data = matchp, matched = TRUE
+)
+mort3 <- survmy(
+  time = "sos_outtime_death_bbl", event = "sos_out_death_bbl",
+  eventname = "Consistency - Death bbl crossover censored",
+  data = matchp, matched = TRUE, sensanalysis = TRUE
+)
+mort4 <- survmy(
+  time = "sos_outtime_death", event = "sos_out_death",
+  eventname = "Consistency - Death excl NT-proBNP",
+  data = matchp_sens, matched = TRUE, sensanalysis = TRUE
+)
+
+all <- rbind(mort1, empty_func(2))
+match <- rbind(mort2, mort3, mort4)
+
+mortall <- cbind(
+  Outcome = coalesce(all[, 1], match[, 1]),
+  Model = coalesce(all[, 2], match[, 2]),
+  all[3:4],
+  match[3:4]
+)
+
 outall <- rbind(
   hfhospall,
-  cvmortall
+  cvmortall,
+  hospall,
+  mortall
 )
 
 

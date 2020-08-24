@@ -1,0 +1,228 @@
+```{r outtabsub, cache=cacheon}
+survmysub <- function(time, event, xvar, xvarname) {
+  levs <- levels(pdata %>% pull(!!sym(xvar)))
+
+  out <- data.frame(matrix(NA, ncol = 6, nrow = length(levs) + 1))
+  colnames(out) <- c("Subgroup", "HR (95% CI)", "p", "coef", "lci", "uci")
+
+  out[1, 1] <- xvarname
+
+  for (i in seq_along(levs)) {
+    out[1 + i, 1] <- paste0("  ", levs[i])
+
+    mod <- coxph(formula(paste0(
+      "Surv(", time, ",",
+      event, "=='Yes') ~ shf_bbl * relevel(", xvar, ", ref = '", levs[i], "') + frailty(par)"
+    )),
+    data = matchp
+    )
+
+    smod <- summary(mod)
+
+    out[1 + i, 2] <- paste0(
+      dF(smod$conf.int[1, 1], dig = 2),
+      " (", dF(smod$conf.int[1, 3], dig = 2),
+      "-", dF(smod$conf.int[1, 4], dig = 2), ")"
+    )
+
+    out[1 + i, 4] <- log(smod$conf.int[1, 1])
+    out[1 + i, 5] <- log(smod$conf.int[1, 3])
+    out[1 + i, 6] <- log(smod$conf.int[1, 4])
+
+    if (i == 1) {
+      pint <- car::Anova(mod, type = "III")
+
+      out[1, 3] <- dF(pint[4, 3], dig = 3, p = TRUE)
+    }
+  }
+  return(out)
+}
+
+plotforest <- function(forestdata) {
+  cextext <- 1
+
+  par(mar = c(4, 18, 1, 2) + 0.2)
+
+
+  plot(rev(forestdata$coef), 1:nrow(forestdata),
+    cex = 2,
+    xlim = c(
+      log(.5),
+      log(1.3)
+    ),
+    xlab = NA,
+    ylim = c(1, nrow(forestdata) + .4),
+    axes = FALSE,
+    ylab = NA,
+    main = NA,
+    type = "p",
+    pch = 22,
+    bg = kicols[1],
+    col = kicols[1]
+  )
+
+  for (i in 1:nrow(forestdata)) {
+    if (!is.na(rev(forestdata$lci)[i])) {
+      matplot(c(rev(forestdata$lci)[i], rev(forestdata$uci)[i]), c(i, i),
+        type = "l", add = TRUE, col = kicols[1], cex = 2
+      )
+    }
+  }
+
+  matplot(c(log(1), log(1)), c(-1, nrow(forestdata) + 1), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
+
+  axis(1,
+    cex.axis = cextext, at = log(seq(0.5, 1.3, 0.1)),
+    labels = c(0.5, 0.6, 0.7, 0.8, NA, 1.0, NA, NA, 1.3)
+  )
+  axis(1,
+    cex.axis = cextext, at = log(c(0.9, 1.1)),
+    labels = c(0.9, 1.1)
+  )
+
+  axis(2,
+    at = c(1:nrow(forestdata), nrow(forestdata) + 1),
+    labels = c(rev(forestdata$Subgroup), "Subgroup"),
+    cex.axis = cextext, tick = FALSE, las = 2, line = 17, hadj = 0
+  )
+
+  axis(2,
+    at = c(1:nrow(forestdata), nrow(forestdata) + 1),
+    labels = c(rev(forestdata$`HR (95% CI)`), "Hazard Ratio (95% CI)"),
+    cex.axis = cextext, tick = FALSE, las = 2, line = 6, hadj = 0.5
+  )
+
+  axis(2,
+    at = c(1:nrow(forestdata), nrow(forestdata) + 1),
+    labels = c(rev(forestdata$p), "P interaction"),
+    cex.axis = cextext, tick = FALSE, las = 2, line = -1, hadj = 0.5
+  )
+
+  axis(1,
+    at = 0.04, cex.axis = cextext,
+    labels = "Bbl better     No Bbl better", line = 1, tick = FALSE
+  )
+}
+```
+
+```{r outtabsubhfhosp, cache=cacheon, dependson="outtabsub", fig.cap="Subgroups 1 HF hospitalization"}
+hfhosp <- survmysub(
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  xvar = "shf_sex",
+  xvarname = "Gender"
+)
+
+hfhosp <- rbind(
+  hfhosp,
+  survmysub(
+    time = "sos_outtime_hosphf",
+    event = "sos_out_hosphf",
+    xvar = "shf_age_cat",
+    xvarname = "Age (years)"
+  )
+)
+
+hfhosp <- rbind(
+  hfhosp,
+  survmysub(
+    time = "sos_outtime_hosphf",
+    event = "sos_out_hosphf",
+    xvar = "shf_bpsys_cat",
+    xvarname = "Systolic bp (mmHg)"
+  )
+)
+
+hfhosp <- rbind(
+  hfhosp,
+  survmysub(
+    time = "sos_outtime_hosphf",
+    event = "sos_out_hosphf",
+    xvar = "shf_heartrate_cat",
+    xvarname = "Heart rate (beats/min)"
+  )
+)
+
+hfhosp <- rbind(
+  hfhosp,
+  survmysub(
+    time = "sos_outtime_hosphf",
+    event = "sos_out_hosphf",
+    xvar = "sos_com_mi",
+    xvarname = "Myocardial infarction"
+  )
+)
+
+hfhosp <- rbind(
+  hfhosp,
+  survmysub(
+    time = "sos_outtime_hosphf",
+    event = "sos_out_hosphf",
+    xvar = "sos_com_af",
+    xvarname = "Atrial fibrillation"
+  )
+)
+
+plotforest(hfhosp)
+```
+
+```{r outtabsubcvdeath, cache=cacheon, dependson="outtabsub", fig.cap="Subgroups CVD"}
+cvmort <- survmysub(
+  time = "sos_outtime_death",
+  event = "sos_out_deathcv",
+  xvar = "shf_sex",
+  xvarname = "Gender"
+)
+
+cvmort <- rbind(
+  cvmort,
+  survmysub(
+    time = "sos_outtime_death",
+    event = "sos_out_deathcv",
+    xvar = "shf_age_cat",
+    xvarname = "Age (years)"
+  )
+)
+
+cvmort <- rbind(
+  cvmort,
+  survmysub(
+    time = "sos_outtime_death",
+    event = "sos_out_deathcv",
+    xvar = "shf_bpsys_cat",
+    xvarname = "Systolic bp (mmHg)"
+  )
+)
+
+cvmort <- rbind(
+  cvmort,
+  survmysub(
+    time = "sos_outtime_death",
+    event = "sos_out_deathcv",
+    xvar = "shf_heartrate_cat",
+    xvarname = "Heart rate (beats/min)"
+  )
+)
+
+cvmort <- rbind(
+  cvmort,
+  survmysub(
+    time = "sos_outtime_death",
+    event = "sos_out_deathcv",
+    xvar = "sos_com_mi",
+    xvarname = "Myocardial infarction"
+  )
+)
+
+cvmort <- rbind(
+  cvmort,
+  survmysub(
+    time = "sos_outtime_death",
+    event = "sos_out_deathcv",
+    xvar = "sos_com_af",
+    xvarname = "Atrial fibrillation"
+  )
+)
+
+plotforest(cvmort)
+```
