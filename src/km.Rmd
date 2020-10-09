@@ -90,7 +90,7 @@ axis(1, at = seq(0, 7, 1) * 365, labels = nrisk[1:8], line = 3, tick = FALSE, ce
 axis(1, at = seq(0, 7, 1) * 365, labels = nrisk[9:16], line = 4, tick = FALSE, cex.axis = 1)
 ```
 
-```{r kmah, fig.cap="1-KM 1 all-cause hospitalization"}
+```{r kmhosp, fig.cap="1-KM 1 all-cause hospitalization"}
 fit <- survfit(Surv(sos_outtime_hospany, sos_out_hospany == "Yes") ~ shf_bbl, data = matchp)
 
 # logrank

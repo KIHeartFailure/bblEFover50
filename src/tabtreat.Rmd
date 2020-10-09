@@ -54,6 +54,7 @@ colnames(tabtreatout) <- c("Variables", "All", "Matched")
 write.xlsx(tabtreatout, paste0("./output/tabs/tabtreat_", Sys.Date(), ".xlsx"))
 
 mykable(tabtreatout,
-  caption = "Treatment characteristics"
+  caption = "Treatment characteristics",
+  scale_down = F
 )
 ```

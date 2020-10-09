@@ -87,4 +87,4 @@ matchp <- matchplm2 %>%
       TRUE ~ as.character(sos_out_death)
     )
   ) %>%
-  select(-EDATUM, -diffmed, -bblcenstime, bblcensdate)
+  select(-EDATUM, -diffmed, -bblcenstime, -bblcensdate)

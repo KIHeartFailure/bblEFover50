@@ -10,29 +10,29 @@ survmysub <- function(time, event, xvar, xvarname) {
   for (i in seq_along(levs)) {
     out[1 + i, 1] <- paste0("  ", levs[i])
 
-    mod <- coxph(formula(paste0(
+    mod <- coxme(formula(paste0(
       "Surv(", time, ",",
-      event, "=='Yes') ~ shf_bbl * relevel(", xvar, ", ref = '", levs[i], "') + frailty(par)"
+      event, "=='Yes') ~ shf_bbl * relevel(", xvar, ", ref = '", levs[i], "') + (1 | par)"
     )),
     data = matchp
     )
 
-    smod <- summary(mod)
+    se <- sqrt(vcov(mod)[1])
 
     out[1 + i, 2] <- paste0(
-      dF(smod$conf.int[1, 1], dig = 2),
-      " (", dF(smod$conf.int[1, 3], dig = 2),
-      "-", dF(smod$conf.int[1, 4], dig = 2), ")"
+      dF(exp(mod$coefficients[1]), dig = 2),
+      " (", dF(exp(mod$coefficients[1] - z05 * se), dig = 2),
+      "-", dF(exp(mod$coefficients[1] + z05 * se), dig = 2), ")"
     )
 
-    out[1 + i, 4] <- log(smod$conf.int[1, 1])
-    out[1 + i, 5] <- log(smod$conf.int[1, 3])
-    out[1 + i, 6] <- log(smod$conf.int[1, 4])
+    out[1 + i, 4] <- mod$coefficients[1]
+    out[1 + i, 5] <- mod$coefficients[1] - z05 * se
+    out[1 + i, 6] <- mod$coefficients[1] + z05 * se
 
     if (i == 1) {
-      pint <- car::Anova(mod, type = "III")
+      pint <- car::Anova(mod, type = "III", test.statistic = "Wald")
 
-      out[1, 3] <- dF(pint[4, 3], dig = 3, p = TRUE)
+      out[1, 3] <- dF(pint[3, 3], dig = 3, p = TRUE)
     }
   }
   return(out)

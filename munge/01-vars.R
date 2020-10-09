@@ -49,7 +49,8 @@ tabvars <- c(
   "sos_com_alcohol",
   "sos_com_muscoloskeletal3y",
   "sos_com_cancer3y",
-  "sos_com_depression"
+  "sos_com_depression",
+  "sos_com_mi_or_af"
 )
 
 # vars fox log reg and cox reg
@@ -58,7 +59,8 @@ tabvars_not_in_mod <- c(
   "shf_bpdia",
   "shf_ef",
   "shf_efproc",
-  "shf_logntpropbnp"
+  "shf_logntpropbnp",
+  "sos_com_mi_or_af"
 )
 
 modvars <- tabvars[!(tabvars %in% tabvars_not_in_mod)]

@@ -54,19 +54,10 @@ SHFDB3, https://kiheartfailure.github.io/shfdb3/, v 3.1.4.
 ## Inclusion/exclusion criteria
 
 ```{r flow}
-mykable(flow, caption = "Flowchart")
+mykable(flow, caption = "Flowchart", scale_down = F)
 ```
 
 First patient in: `r min(pdata$shf_indexdtm)` and last patient in: `r max(pdata$shf_indexdtm)`. 
-Median age (IQR): `r pdata %>% summarise(med = dF(median(shf_age), dig = 1),
-                                             q1 = dF(quantile(shf_age, probs = 0.25), dig = 1),
-                                             q3 = dF(quantile(shf_age, probs = 0.75), dig = 1)) %>%
-                                   mutate(out = paste0(med, " (", q1, "-", q3, ")")) %>%
-                                   pull(out)` and 
-`r pdata %>% count(shf_sex) %>%
-  mutate(perc = dF(n / sum(n) * 100, 1)) %>%
-  filter(shf_sex == "Female") %>%
-  pull(perc)`% females.                                   
 
 # Statistical analysis 
 
@@ -95,6 +86,26 @@ matching to balance the baseline characteristics was assessed by
 standardized mean differences.  
 
 ## Baseline characteristics
+
+Overall cohort: The median age (IQR) is `r pdata %>% summarise(med = dF(median(shf_age), dig = 1),
+                                             q1 = dF(quantile(shf_age, probs = 0.25), dig = 1),
+                                             q3 = dF(quantile(shf_age, probs = 0.75), dig = 1)) %>%
+                                   mutate(out = paste0(med, " (", q1, "-", q3, ")")) %>%
+                                   pull(out)` and 
+`r pdata %>% count(shf_sex) %>%
+  mutate(perc = dF(n / sum(n) * 100, 1)) %>%
+  filter(shf_sex == "Female") %>%
+  pull(perc)`% females.             
+  
+Matched cohort: The median age (IQR) is `r matchp %>% summarise(med = dF(median(shf_age), dig = 1),
+                                             q1 = dF(quantile(shf_age, probs = 0.25), dig = 1),
+                                             q3 = dF(quantile(shf_age, probs = 0.75), dig = 1)) %>%
+                                   mutate(out = paste0(med, " (", q1, "-", q3, ")")) %>%
+                                   pull(out)` and 
+`r matchp %>% count(shf_sex) %>%
+  mutate(perc = dF(n / sum(n) * 100, 1)) %>%
+  filter(shf_sex == "Female") %>%
+  pull(perc)`% females.             
 
 ```{r, child = "../src/tab1.Rmd"}
 
@@ -148,6 +159,28 @@ in the Dispensed Drug Registry and for treated patients, crossover was defined
 as no bbl dispension within 6 months from baseline or from last dispension, 
 where crossover was set 3 months from index or last refill. 
 
+For time to death/emigration or last follow-up in the matched cohort: 
+
+`r cross <- full_join(matchp %>% 
+                   group_by(shf_bbl) %>%
+                   count(sos_out_death, sos_out_death_bbl) %>%
+                   mutate(pro = dF(n / sum(n) * 100, 0),
+                          np = paste0(n, " (", pro, "%)")) %>%
+                   ungroup() %>%
+                   filter(sos_out_death == "Yes" & sos_out_death_bbl == "No") %>%
+                   select(shf_bbl, np), 
+                 matchp %>% 
+                   group_by(shf_bbl, sos_out_death, sos_out_death_bbl) %>%
+                   summarise(med = dF(median(sos_outtime_death_bbl), dig = 0),
+                             q1 = dF(quantile(sos_outtime_death_bbl, probs = 0.25), dig = 0),
+                             q3 = dF(quantile(sos_outtime_death_bbl, probs = 0.75), dig = 0)) %>%
+                   mutate(out = paste0(med, " (", q1, "-", q3, ")")) %>%
+                   ungroup() %>%
+                   filter(sos_out_death == "Yes" & sos_out_death_bbl == "No") %>%
+                   select(shf_bbl, out), by = "shf_bbl")
+colnames(cross) <- c("Bbl", "n (%) crossover", "Median (IQR) time to crossover")
+mykable(cross, caption = "Crossovers", scale_down = F)` 
+
 #### Excluding NT-proBNP
 
 Since the % missing observations with NT-proBNP was high, analyses were also 
@@ -177,8 +210,10 @@ analysis on EF >= 50% with continuous EF was performed N =
 
 #### Other subgroups
 
-Subgroups for selected other variables was depicted in a Forest plot for the matched 
+Subgroups for selected other variables are presented in a Forest plot for the matched 
 cohort using interaction effects. 
+Note that there is missing data for some variables and the matching 
+(and thereby the adjustment) may therefore not be complete. 
 
 ### Assumptions
 
@@ -191,6 +226,27 @@ were deemed not to have proportional hazards and therefore stratified for in the
 ```{r, child = "../src/km.Rmd"}
 
 ```
+
+Summary stats for time to death/emigration or end of follow-up: 
+
+Overall cohort: The median (min-max) follow-up is 
+`r pdata %>% summarise(med = dF(median(sos_outtime_death), dig = 0),
+                                             min = dF(min(sos_outtime_death), dig = 0),
+                                             max = dF(max(sos_outtime_death), dig = 0)) %>%
+                                   mutate(out = paste0(med, " (", min, "-", max, ")")) %>%
+                                   pull(out)` for a total of 
+                                   `r pdata %>% summarise(sumpy = dF(sum(sos_outtime_death) / 365.25, dig = 0)) %>%
+                                   pull(sumpy)` patient-years of follow-up.
+
+Matched cohort: The median (min-max) follow-up is 
+`r matchp %>% summarise(med = dF(median(sos_outtime_death), dig = 0),
+                                             min = dF(min(sos_outtime_death), dig = 0),
+                                             max = dF(max(sos_outtime_death), dig = 0)) %>%
+                                   mutate(out = paste0(med, " (", min, "-", max, ")")) %>%
+                                   pull(out)` for a total of 
+                                   `r matchp %>% summarise(sumpy = dF(sum(sos_outtime_death) / 365.25, dig = 0)) %>%
+                                   pull(sumpy)` patient-years of follow-up.
+                                 
 
 ```{r, child = "../src/outtab.Rmd"}
 

@@ -54,6 +54,9 @@ pdata <- pdata %>%
       shf_bpsys < 130 ~ "<130",
       shf_bpsys >= 130 ~ ">=130"
     ),
+    
+    sos_com_mi_or_af = case_when(sos_com_mi == "Yes" | sos_com_af == "Yes" ~ "Yes",
+                                 TRUE ~ "No"),
 
     # numeric bbl
     shf_bblnum = as.numeric(shf_bbl) - 1,

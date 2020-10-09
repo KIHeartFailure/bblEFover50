@@ -132,19 +132,18 @@ survmy <- function(time, event, eventname, data, matched = FALSE,
 
   if (matched) {
     if (!fg) {
-      mod <- coxph(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl + frailty(par)")),
+      mod <- coxme(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ shf_bbl + (1 | par)")),
         data = tmpdata
       )
 
-      smod <- summary(mod)
+      se <- sqrt(vcov(mod)[1])
 
       out[tmpnrow, 2] <- "Adj full HR (95% CI), p-value"
-
       out[tmpnrow, 3:4] <- c("ref", paste0(
-        dF(smod$conf.int[1, 1], dig = 2),
-        " (", dF(smod$conf.int[1, 3], dig = 2),
-        "-", dF(smod$conf.int[1, 4], dig = 2), "), ",
-        dF(smod$coef[1, 6], dig = 3, p = TRUE)
+        dF(exp(mod$coefficients[1]), dig = 2),
+        " (", dF(exp(mod$coefficients[1] - z05 * se), dig = 2),
+        "-", dF(exp(mod$coefficients[1] + z05 * se), dig = 2), "), ",
+        dF((1 - pnorm(abs(mod$coeff[1] / se))) * 2, dig = 3, p = TRUE)
       ))
     }
     if (fg) {
