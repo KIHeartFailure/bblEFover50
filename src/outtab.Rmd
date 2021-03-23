@@ -205,12 +205,19 @@ hfhosp7 <- survmy(
   data = pdata %>% filter(shf_efproc >= 55),
   fullyadj = FALSE
 )
-hfhosp8 <- survmy(
+hfhosp8a <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_hosphf",
+  eventname = "First HF hosp EF<60% (after approx April 2017)",
+  data = pdata %>% filter(shf_efproc < 60),
+  fullyadj = FALSE
+)
+hfhosp8b <- survmy(
   time = "sos_outtime_hosphf", event = "sos_out_hosphf",
   eventname = "First HF hosp EF>=60% (after approx April 2017)",
   data = pdata %>% filter(shf_efproc >= 60),
   fullyadj = FALSE
 )
+
 
 empty_func <- function(nrowmy = 3) {
   empty <- data.frame(matrix(NA, nrow = nrowmy, ncol = 4))
@@ -218,8 +225,8 @@ empty_func <- function(nrowmy = 3) {
   return(empty)
 }
 
-all <- rbind(hfhosp1, empty_func(), hfhosp6, hfhosp7, hfhosp8)
-match <- rbind(hfhosp2, hfhosp3, hfhosp4, hfhosp5, empty_func(4 * 3))
+all <- rbind(hfhosp1, empty_func(), hfhosp6, hfhosp7, hfhosp8a, hfhosp8b)
+match <- rbind(hfhosp2, hfhosp3, hfhosp4, hfhosp5, empty_func(4 * 4))
 
 hfhospall <- cbind(
   Outcome = coalesce(all[, 1], match[, 1]),
@@ -264,7 +271,13 @@ cvmort7 <- survmy(
   data = pdata %>% filter(shf_efproc >= 55),
   fullyadj = FALSE
 )
-cvmort8 <- survmy(
+cvmort8a <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CV death EF<60% (after approx April 2017)",
+  data = pdata %>% filter(shf_efproc < 60),
+  fullyadj = FALSE
+)
+cvmort8b <- survmy(
   time = "sos_outtime_death", event = "sos_out_deathcv",
   eventname = "CV death EF>=60% (after approx April 2017)",
   data = pdata %>% filter(shf_efproc >= 60),
@@ -272,8 +285,8 @@ cvmort8 <- survmy(
 )
 
 
-all <- rbind(cvmort1, empty_func(), cvmort6, cvmort7, cvmort8)
-match <- rbind(cvmort2, cvmort3, cvmort4, cvmort5, empty_func(4 * 3))
+all <- rbind(cvmort1, empty_func(), cvmort6, cvmort7, cvmort8a, cvmort8b)
+match <- rbind(cvmort2, cvmort3, cvmort4, cvmort5, empty_func(4 * 4))
 
 cvmortall <- cbind(
   Outcome = coalesce(all[, 1], match[, 1]),
@@ -364,8 +377,9 @@ names(myHeader) <- c(" ", " ", "All", "Matched")
 
 
 mykable(outall,
-  fontsize = 6,
-  caption = "Outcomes"
+  fontsize = 5,
+  caption = "Outcomes",
+  longtable = TRUE
 ) %>%
   landscape() %>%
   add_header_above(myHeader)

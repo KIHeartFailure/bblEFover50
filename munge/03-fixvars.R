@@ -46,8 +46,8 @@ pdata <- pdata %>%
     ),
 
     shf_heartrate_cat = case_when(
-      shf_heartrate < 72 ~ "<72",
-      shf_heartrate >= 72 ~ ">=72"
+      shf_heartrate < 100 ~ "<100",
+      shf_heartrate >= 100 ~ ">=100"
     ),
 
     shf_bpsys_cat = case_when(
