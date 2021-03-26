@@ -183,6 +183,16 @@ hfhosp <- rbind(
   )
 )
 
+hfhosp <- rbind(
+  hfhosp,
+  survmysub(
+    time = "sos_outtime_hosphf",
+    event = "sos_out_hosphf",
+    xvar = "shf_indexyear_cat",
+    xvarname = "Year of inclusion"
+  )
+)
+
 plotforest(hfhosp)
 ```
 
@@ -261,6 +271,16 @@ cvmort <- rbind(
     event = "sos_out_deathcv",
     xvar = "sos_com_peripheralartery",
     xvarname = "PAD"
+  )
+)
+
+cvmort <- rbind(
+  cvmort,
+  survmysub(
+    time = "sos_outtime_death",
+    event = "sos_out_deathcv",
+    xvar = "shf_indexyear_cat",
+    xvarname = "Year of inclusion"
   )
 )
 

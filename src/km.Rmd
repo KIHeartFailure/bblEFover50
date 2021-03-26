@@ -55,7 +55,7 @@ p <- dF(pchisq(sd$chisq, length(sd$n) - 1, lower.tail = FALSE), dig = 3, p = TRU
 par(mar = c(6, 6, 1, 1) + 0.1)
 plot(fit,
   fun = "event",
-  ylab = "CVD (%)",
+  ylab = "CV death (%)",
   xscale = 30.5,
   yscale = 100,
   col = kicols,
